@@ -167,4 +167,4 @@ GitHub: [@priyankabc1910](https://github.com/priyankabc1910)
 
 ---
 
-*IssueFlow — helping engineering teams understand not only what is broken, but what matters most.*
+*IssueFlow — helping engineering teams understand not only what is broken, but what matters most
