@@ -1,0 +1,22 @@
+{
+  "name": "issueflow",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n API,WEB -c blue,magenta \"npm run dev -w @issueflow/api\" \"npm run dev -w @issueflow/web\"",
+    "build": "npm run build -w @issueflow/api && npm run build -w @issueflow/web",
+    "test": "npm run test -w @issueflow/api && npm run test -w @issueflow/web",
+    "test:e2e": "npm run test:e2e -w @issueflow/web",
+    "db:generate": "npm run db:generate -w @issueflow/api",
+    "db:migrate": "npm run db:migrate -w @issueflow/api",
+    "db:seed": "npm run db:seed -w @issueflow/api",
+    "worker": "npm run worker -w @issueflow/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

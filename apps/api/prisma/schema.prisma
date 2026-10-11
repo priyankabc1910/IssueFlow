@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  DEVELOPER
+  TESTER
+  VIEWER
+}
+enum IssueStatus {
+  OPEN
+  IN_PROGRESS
+  IN_REVIEW
+  RESOLVED
+  CLOSED
+}
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+enum IssueType {
+  BUG
+  TASK
+  FEATURE
+}
+
+model User {
+  id           String       @id @default(cuid())
+  name         String
+  email        String       @unique
+  passwordHash String
+  createdAt    DateTime     @default(now())
+  memberships  Membership[]
+  reported     Issue[]      @relation("Reporter")
+  assigned     Issue[]      @relation("Assignee")
+  auditEntries AuditEntry[]
+  notifications Notification[]
+}
+
+model Workspace {
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  createdAt   DateTime     @default(now())
+  memberships Membership[]
+  projects    Project[]
+}
+
+model Membership {
+  id          String    @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        Role      @default(DEVELOPER)
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  @@unique([userId, workspaceId])
+  @@index([workspaceId, role])
+}
+
+model Project {
+  id          String    @id @default(cuid())
+  name        String
+  key         String
+  description String?
+  workspaceId String
+  githubRepo  String?
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  issues      Issue[]
+  @@unique([workspaceId, key])
+}
+
+model Issue {
+  id                 String       @id @default(cuid())
+  key                String       @unique
+  title              String
+  description        String       @db.Text
+  stepsToReproduce   String?      @db.Text
+  expectedResult     String?      @db.Text
+  actualResult       String?      @db.Text
+  environment        String?
+  status             IssueStatus  @default(OPEN)
+  priority           Priority     @default(MEDIUM)
+  severity           Severity     @default(MEDIUM)
+  type               IssueType    @default(BUG)
+  component          String?
+  dueAt              DateTime?
+  firstResponseAt    DateTime?
+  resolvedAt         DateTime?
+  reopenedCount      Int          @default(0)
+  githubIssueUrl     String?
+  projectId          String
+  reporterId         String
+  assigneeId         String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  project            Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reporter           User         @relation("Reporter", fields: [reporterId], references: [id])
+  assignee           User?        @relation("Assignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  auditEntries       AuditEntry[]
+  notifications      Notification[]
+  @@index([projectId, status, priority])
+  @@index([dueAt, status])
+  @@index([component, createdAt])
+}
+
+model AuditEntry {
+  id        String   @id @default(cuid())
+  issueId   String
+  actorId   String
+  action    String
+  changes   Json?
+  createdAt DateTime @default(now())
+  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  actor     User     @relation(fields: [actorId], references: [id])
+  @@index([issueId, createdAt])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  issueId   String?
+  title     String
+  body      String
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  issue     Issue?   @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  @@index([userId, readAt, createdAt])
+}
